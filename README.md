@@ -50,13 +50,14 @@ Algumas perguntas para testar: *"Posso levar meu cachorro?"*, *"Qual a melhor so
 
 ## 💡 Coisas que aprendi no caminho
 
-- 🖥️ **GPU antiga trava o Ollama.** A minha (AMD R7 240) derrubava o processo, então deixei os modelos no processador com `num_gpu=0`. Se a sua placa funciona, tire isso de `vetor.py` e `main.py` que fica bem mais rápido. Na CPU cada resposta leva uns 15 a 20 segundos.
+- 🖥️ **GPU antiga trava o Ollama.** A minha (AMD R7 240) derrubava o processo, então deixei os modelos no processador com `num_gpu=0`. Se a sua placa funciona, tire isso de `vetor.py` e `main.py` que fica bem mais rápido.
+- ⏳ **A demora é o modelo lendo, não escrevendo.** Na CPU, o `llama3.2` passa uns 7 segundos lendo o prompt (as 5 avaliações + a pergunta) antes da primeira palavra. Depois disso a resposta vai aparecendo na tela aos poucos, graças ao `cadeia.stream()`. A primeira pergunta demora mais, porque o modelo ainda está sendo carregado na memória.
 - 🔁 **Mudou o CSV ou o modelo de embeddings?** Apague a pasta `chroma_db/` para ele indexar de novo.
 - 🌎 **A busca em português ainda erra.** O `mxbai-embed-large` foi feito para inglês e às vezes traz a avaliação errada em primeiro lugar.
 
 ## 🗺️ Próximos passos
 
-- [ ] ⚡ Mostrar a resposta enquanto ela é gerada
+- [x] ⚡ Mostrar a resposta enquanto ela é gerada
 - [ ] 🌎 Testar um modelo de embeddings multilíngue, como o `bge-m3`
 - [ ] 📊 Criar um script para medir quanto a busca acerta
 - [ ] 💬 Lembrar da conversa para perguntas de acompanhamento

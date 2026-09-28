@@ -34,5 +34,8 @@ while True:
         continue
 
     documentos = buscador.invoke(pergunta)
-    resposta = cadeia.invoke({"avaliacoes": formatar(documentos), "pergunta": pergunta})
-    print(f"\n{resposta}")
+    print()
+    # stream devolve a resposta em pedaços conforme o modelo gera, em vez de esperar o texto inteiro.
+    for pedaco in cadeia.stream({"avaliacoes": formatar(documentos), "pergunta": pergunta}):
+        print(pedaco, end="", flush=True)
+    print()
