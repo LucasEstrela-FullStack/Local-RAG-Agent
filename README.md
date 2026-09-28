@@ -16,6 +16,7 @@ O modelo não sabe nada sobre a pizzaria. Então, antes de responder, o agente p
 1. 📄 Cada avaliação do `avaliacoes.csv` vira um vetor com o `bge-m3` e fica salva no ChromaDB.
 2. 🔎 A pergunta também vira vetor, e o ChromaDB devolve até 5 avaliações parecidas. As que estão longe demais do assunto são descartadas, e se nada sobrar o agente diz que não encontrou nada.
 3. ✍️ O `llama3.2` lê essas avaliações e escreve a resposta.
+4. 💬 Se a pergunta sozinha não acha nada, pode ser um acompanhamento ("E ela é cara?"). Aí o agente junta com o assunto anterior ("Tem opção vegana? E ela é cara?") e usa isso tanto na busca quanto no que o modelo lê.
 
 Stack: 🐍 Python, 🦙 Ollama, 🔗 LangChain, 🗄️ ChromaDB e 🐼 pandas.
 
@@ -77,6 +78,8 @@ O `bge-m3` não acerta tudo: em *"Tem comida sem carne?"* ele se prende ao "sem"
 - 🖥️ **GPU antiga trava o Ollama.** A minha (AMD R7 240) derrubava o processo, então deixei os modelos no processador com `num_gpu=0`. Se a sua placa funciona, tire isso de `vetor.py` e `main.py` que fica bem mais rápido.
 - ⏳ **A demora é o modelo lendo, não escrevendo.** Na CPU, o `llama3.2` passa uns 7 segundos lendo o prompt (as 5 avaliações + a pergunta) antes da primeira palavra. Por isso a busca descarta as avaliações irrelevantes: prompt menor, leitura mais rápida. Depois disso a resposta vai aparecendo na tela aos poucos, graças ao `cadeia.stream()`. A primeira pergunta demora mais, porque o modelo ainda está sendo carregado na memória.
 - 🎯 **Modelo pequeno leva o prompt ao pé da letra.** Com "se não souber, diga que não sabe", o `llama3.2` respondia "Não sabe" mesmo recebendo a avaliação certa. Trocar por uma frase exata ("Não encontrei nada sobre isso nas avaliações.") resolveu.
+- 🧩 **Memória com modelo pequeno é traiçoeira.** Tentei três jeitos: pedir ao `llama3.2` para reescrever a pergunta (ele inventava preço em vez de reescrever), mandar o histórico no prompt (ele copiava um "Não encontrei" anterior) e juntar a pergunta com o assunto anterior. Só o último funcionou bem, e ainda sem gastar uma chamada extra ao modelo.
+- 🌡️ **`temperature=0` para comparar prompts.** Com a temperatura padrão, a mesma pergunta dá respostas diferentes a cada vez, e fica impossível saber se um ajuste no prompt ajudou ou foi sorte.
 - 🔁 **Mudou o CSV?** Apague a pasta `chroma_db/` para ele indexar de novo.
 - 🌎 **Modelo de embeddings feito para inglês erra em português.** O `mxbai-embed-large` não ligava "entrega" a "delivery". O `bge-m3`, que é multilíngue, separa bem melhor o que é relevante do que não é.
 - 📏 **Cada modelo mede distância numa escala diferente.** O corte que funcionava no `mxbai-embed-large` (0,70) não serve para o `bge-m3` (0,90), por isso os limites ficam por modelo em `LIMITES`, no `vetor.py`.
@@ -86,4 +89,4 @@ O `bge-m3` não acerta tudo: em *"Tem comida sem carne?"* ele se prende ao "sem"
 - [x] ⚡ Mostrar a resposta enquanto ela é gerada
 - [x] 🌎 Testar um modelo de embeddings multilíngue, como o `bge-m3`
 - [x] 📊 Criar um script para medir quanto a busca acerta
-- [ ] 💬 Lembrar da conversa para perguntas de acompanhamento
+- [x] 💬 Lembrar da conversa para perguntas de acompanhamento
