@@ -1,15 +1,16 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
 
-from vetor import buscador
+from vetor import buscar
 
 modelo = OllamaLLM(model="llama3.2", num_gpu=0)
 
 template = """
 Você é um especialista em responder perguntas sobre uma pizzaria.
-Responda em português, usando apenas as avaliações abaixo. Se elas não trouxerem a resposta, diga que não sabe.
+Responda em português, usando apenas as avaliações de clientes abaixo.
+Se nenhuma avaliação tratar do assunto da pergunta, responda exatamente: "Não encontrei nada sobre isso nas avaliações."
 
-Avaliações relevantes:
+Avaliações de clientes:
 {avaliacoes}
 
 Pergunta: {pergunta}
@@ -19,6 +20,8 @@ cadeia = prompt | modelo
 
 
 def formatar(documentos):
+    if not documentos:
+        return "(nenhuma avaliação fala sobre isso)"
     return "\n".join(
         f"- (nota {d.metadata['nota']}, {d.metadata['data']}) {d.page_content}"
         for d in documentos
@@ -33,7 +36,7 @@ while True:
     if not pergunta:
         continue
 
-    documentos = buscador.invoke(pergunta)
+    documentos = buscar(pergunta)
     print()
     # stream devolve a resposta em pedaços conforme o modelo gera, em vez de esperar o texto inteiro.
     for pedaco in cadeia.stream({"avaliacoes": formatar(documentos), "pergunta": pergunta}):

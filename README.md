@@ -14,7 +14,7 @@ separada, embora a textura não seja igual à tradicional.
 O modelo não sabe nada sobre a pizzaria. Então, antes de responder, o agente procura as avaliações que mais têm a ver com a pergunta e entrega elas junto com o prompt.
 
 1. 📄 Cada avaliação do `avaliacoes.csv` vira um vetor com o `mxbai-embed-large` e fica salva no ChromaDB.
-2. 🔎 A pergunta também vira vetor, e o ChromaDB devolve as 5 avaliações mais parecidas.
+2. 🔎 A pergunta também vira vetor, e o ChromaDB devolve até 5 avaliações parecidas. As que estão longe demais do assunto são descartadas, e se nada sobrar o agente diz que não encontrou nada.
 3. ✍️ O `llama3.2` lê essas avaliações e escreve a resposta.
 
 Stack: 🐍 Python, 🦙 Ollama, 🔗 LangChain, 🗄️ ChromaDB e 🐼 pandas.
@@ -45,13 +45,14 @@ Algumas perguntas para testar: *"Posso levar meu cachorro?"*, *"Qual a melhor so
 | Arquivo | O que faz |
 |---|---|
 | `avaliacoes.csv` | As 25 avaliações (título, data, nota e texto) |
-| `vetor.py` | Gera os vetores, salva no ChromaDB e cria o buscador |
+| `vetor.py` | Gera os vetores, salva no ChromaDB e busca as avaliações relevantes |
 | `main.py` | Recebe a pergunta, busca as avaliações e gera a resposta |
 
 ## 💡 Coisas que aprendi no caminho
 
 - 🖥️ **GPU antiga trava o Ollama.** A minha (AMD R7 240) derrubava o processo, então deixei os modelos no processador com `num_gpu=0`. Se a sua placa funciona, tire isso de `vetor.py` e `main.py` que fica bem mais rápido.
-- ⏳ **A demora é o modelo lendo, não escrevendo.** Na CPU, o `llama3.2` passa uns 7 segundos lendo o prompt (as 5 avaliações + a pergunta) antes da primeira palavra. Depois disso a resposta vai aparecendo na tela aos poucos, graças ao `cadeia.stream()`. A primeira pergunta demora mais, porque o modelo ainda está sendo carregado na memória.
+- ⏳ **A demora é o modelo lendo, não escrevendo.** Na CPU, o `llama3.2` passa uns 7 segundos lendo o prompt (as 5 avaliações + a pergunta) antes da primeira palavra. Por isso a busca descarta as avaliações irrelevantes: prompt menor, leitura mais rápida. Depois disso a resposta vai aparecendo na tela aos poucos, graças ao `cadeia.stream()`. A primeira pergunta demora mais, porque o modelo ainda está sendo carregado na memória.
+- 🎯 **Modelo pequeno leva o prompt ao pé da letra.** Com "se não souber, diga que não sabe", o `llama3.2` respondia "Não sabe" mesmo recebendo a avaliação certa. Trocar por uma frase exata ("Não encontrei nada sobre isso nas avaliações.") resolveu.
 - 🔁 **Mudou o CSV ou o modelo de embeddings?** Apague a pasta `chroma_db/` para ele indexar de novo.
 - 🌎 **A busca em português ainda erra.** O `mxbai-embed-large` foi feito para inglês e às vezes traz a avaliação errada em primeiro lugar.
 

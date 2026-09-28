@@ -33,5 +33,19 @@ if not banco.get(limit=1)["ids"]:
     banco.add_documents(documents=documentos, ids=[d.id for d in documentos])
     print(f"{len(documentos)} avaliações indexadas no ChromaDB.")
 
-# O retriever busca as k avaliações com significado mais parecido com a pergunta.
-buscador = banco.as_retriever(search_kwargs={"k": 5})
+# Quanto menor a distância, mais parecido é o significado. Valores medidos com as perguntas de teste:
+# as avaliações certas ficaram entre 0.38 e 0.63, e uma pergunta fora do assunto começou em 0.72.
+DISTANCIA_MAXIMA = 0.70
+MARGEM_DA_MELHOR = 0.10
+
+
+def buscar(pergunta, k=5):
+    resultados = banco.similarity_search_with_score(pergunta, k=k)
+    if not resultados:
+        return []
+    melhor = resultados[0][1]
+    return [
+        documento
+        for documento, distancia in resultados
+        if distancia <= DISTANCIA_MAXIMA and distancia <= melhor + MARGEM_DA_MELHOR
+    ]
