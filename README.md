@@ -22,18 +22,55 @@ Stack: 🐍 Python, 🦙 Ollama, 🔗 LangChain, 🗄️ ChromaDB e 🐼 pandas.
 
 ## 🚀 Rodando
 
-Você precisa do [Ollama](https://ollama.com/download) instalado e de uns 4 GB livres para os modelos.
+```bash
+git clone https://github.com/LucasEstrela-FullStack/Local-RAG-Agent.git
+cd Local-RAG-Agent
+```
+
+Escolha um dos jeitos abaixo. Todos, menos a opção 3, precisam do [Ollama](https://ollama.com/download) instalado com os modelos baixados (uns 4 GB):
 
 ```bash
 ollama pull llama3.2
 ollama pull bge-m3
+```
 
-git clone https://github.com/LucasEstrela-FullStack/Local-RAG-Agent.git
-cd Local-RAG-Agent
+### ⚡ Opção 1: uv (a mais leve)
+
+O [uv](https://docs.astral.sh/uv/) cria o ambiente, instala os pacotes e roda, tudo num comando só. Sem `venv` para criar nem ativar.
+
+```bash
+uv run --with-requirements requirements.txt main.py
+```
+
+Na minha máquina, a primeira execução (instalando tudo do zero) levou **11 s**, contra **171 s** do caminho tradicional com `venv` + `pip`. Para instalar o uv: `winget install astral-sh.uv` no Windows ou `curl -LsSf https://astral.sh/uv/install.sh | sh` no Linux/macOS.
+
+### 🐳 Opção 2: Docker usando o Ollama da máquina
+
+Só o agente vai para o container (imagem de ~725 MB); os modelos continuam no Ollama que você já tem, sem baixar nada de novo.
+
+```bash
+docker build -t local-rag-agent .
+docker run -it --rm -v rag_chroma:/app/chroma_db local-rag-agent
+```
+
+No Linux, acrescente `--add-host=host.docker.internal:host-gateway` ao `docker run`.
+
+### 📦 Opção 3: Docker com tudo dentro
+
+Não precisa de nada instalado além do Docker: o compose sobe o Ollama, baixa os modelos e roda o agente. É a opção mais pesada (a imagem do Ollama tem alguns GB, e os modelos, mais uns 4 GB), mas a mais fácil de levar para outra máquina.
+
+```bash
+docker compose run --rm agente
+```
+
+Na primeira vez demora, por causa do download dos modelos; depois eles ficam guardados num volume.
+
+### 🐍 Sem nada disso: venv + pip
+
+```bash
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1   # no Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
-
 python main.py
 ```
 
@@ -49,6 +86,8 @@ Algumas perguntas para testar: *"Posso levar meu cachorro?"*, *"Qual a melhor so
 | `vetor.py` | Gera os vetores, salva no ChromaDB e busca as avaliações relevantes |
 | `main.py` | Recebe a pergunta, busca as avaliações e gera a resposta |
 | `avaliar.py` | Mede quanto a busca acerta com 15 perguntas de teste |
+| `Dockerfile` | Imagem do agente (Python slim, pacotes instalados com uv, usuário sem root) |
+| `docker-compose.yml` | Sobe Ollama + download dos modelos + agente |
 
 ## 📊 Medindo a busca
 

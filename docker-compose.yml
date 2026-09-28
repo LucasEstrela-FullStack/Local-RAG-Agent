@@ -1,0 +1,35 @@
+services:
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      retries: 30
+
+  # Baixa os modelos uma vez; nas próximas execuções eles já estão no volume e o pull termina na hora.
+  modelos:
+    image: ollama/ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["sh", "-c", "ollama pull llama3.2 && ollama pull bge-m3"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  agente:
+    build: .
+    stdin_open: true
+    tty: true
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - chroma:/app/chroma_db
+    depends_on:
+      modelos:
+        condition: service_completed_successfully
+
+volumes:
+  ollama:
+  chroma:
