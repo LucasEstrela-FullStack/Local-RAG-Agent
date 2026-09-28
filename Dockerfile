@@ -8,6 +8,8 @@ RUN --mount=from=ghcr.io/astral-sh/uv:latest,source=/uv,target=/bin/uv \
     uv pip install --system --no-cache -r requirements.txt
 
 COPY avaliacoes.csv vetor.py main.py avaliar.py ./
+# Só os exemplos entram na imagem; seus documentos entram montando a pasta com -v ./documentos:/app/documentos
+COPY documentos/exemplo-* documentos/
 
 RUN useradd --create-home agente && mkdir chroma_db && chown agente chroma_db
 USER agente

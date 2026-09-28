@@ -1,3 +1,7 @@
 .venv/
 __pycache__/
 chroma_db/
+
+# Seus documentos ficam fora do git; só os exemplos são versionados.
+documentos/*
+!documentos/exemplo-*

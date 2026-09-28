@@ -26,6 +26,7 @@ services:
       OLLAMA_HOST: http://ollama:11434
     volumes:
       - chroma:/app/chroma_db
+      - ./documentos:/app/documentos:ro
     depends_on:
       modelos:
         condition: service_completed_successfully

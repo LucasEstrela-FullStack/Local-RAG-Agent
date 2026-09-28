@@ -1,6 +1,6 @@
 # 🍕 Local RAG Agent
 
-Um agente que responde perguntas sobre uma pizzaria lendo as avaliações dos clientes. Montei para aprender na prática como funciona RAG, e tudo roda no meu computador: sem API paga, sem chave e sem mandar nada para a nuvem. 🔒
+Um agente que responde perguntas sobre uma pizzaria lendo as avaliações dos clientes, ou sobre os seus próprios documentos (PDF, TXT e MD). Montei para aprender na prática como funciona RAG, e tudo roda no meu computador: sem API paga, sem chave e sem mandar nada para a nuvem. 🔒
 
 ```text
 Faça sua pergunta (q para sair): Tem opção para quem não pode comer glúten?
@@ -18,7 +18,7 @@ O modelo não sabe nada sobre a pizzaria. Então, antes de responder, o agente p
 3. ✍️ O `llama3.2` lê essas avaliações e escreve a resposta.
 4. 💬 Se a pergunta sozinha não acha nada, pode ser um acompanhamento ("E ela é cara?"). Aí o agente junta com o assunto anterior ("Tem opção vegana? E ela é cara?") e usa isso tanto na busca quanto no que o modelo lê.
 
-Stack: 🐍 Python, 🦙 Ollama, 🔗 LangChain, 🗄️ ChromaDB e 🐼 pandas.
+Stack: 🐍 Python, 🦙 Ollama, 🔗 LangChain, 🗄️ ChromaDB, 🐼 pandas e 📄 pypdf.
 
 ## 🚀 Rodando
 
@@ -78,14 +78,36 @@ Na primeira vez ele indexa as 25 avaliações; depois reaproveita o banco salvo 
 
 Algumas perguntas para testar: *"Posso levar meu cachorro?"*, *"Qual a melhor sobremesa?"*, *"Quais são as principais reclamações?"*
 
+## 📚 Usando os seus documentos
+
+Coloque arquivos `.pdf`, `.txt` ou `.md` na pasta `documentos/` e rode no modo documentos:
+
+```bash
+python main.py documentos     # ou: uv run --with-requirements requirements.txt main.py documentos
+```
+
+```text
+Faça sua pergunta (q para sair): Qual a temperatura do forno?
+
+A temperatura ideal de trabalho é de 450 °C. (exemplo-manual-funcionario.pdf, página 3)
+```
+
+- ✂️ Textos longos são quebrados em pedaços de ~500 caracteres, e cada pedaço guarda o arquivo e a página de onde veio. Por isso a resposta diz a fonte.
+- 🔁 Adicionou, editou ou apagou um arquivo? Ele percebe sozinho e reindexa na próxima execução.
+- 🙈 A pasta já vem com três exemplos (cardápio, política de entrega e manual do funcionário da pizzaria). Pode apagar e colocar os seus: só os arquivos `exemplo-*` vão para o git.
+- 🐳 No Docker, monte a sua pasta: `docker run -it --rm -v rag_chroma:/app/chroma_db -v ./documentos:/app/documentos local-rag-agent python main.py documentos`. No compose ela já é montada: `docker compose run --rm agente python main.py documentos`.
+
+⚠️ Os limites do filtro foram calibrados com os exemplos. Com documentos bem diferentes, rode `python avaliar.py documentos` com perguntas suas (em `CASOS`, no `avaliar.py`) e ajuste `LIMITES` no `vetor.py` se ele trouxer lixo ou deixar de achar coisas.
+
 ## 📁 Arquivos
 
 | Arquivo | O que faz |
 |---|---|
 | `avaliacoes.csv` | As 25 avaliações (título, data, nota e texto) |
-| `vetor.py` | Gera os vetores, salva no ChromaDB e busca as avaliações relevantes |
-| `main.py` | Recebe a pergunta, busca as avaliações e gera a resposta |
-| `avaliar.py` | Mede quanto a busca acerta com 15 perguntas de teste |
+| `documentos/` | Seus PDFs, TXTs e MDs (vem com três exemplos) |
+| `vetor.py` | Lê as fontes, quebra em pedaços, gera os vetores, salva no ChromaDB e busca os textos relevantes |
+| `main.py` | Recebe a pergunta, busca os textos e gera a resposta (`python main.py [avaliacoes \| documentos]`) |
+| `avaliar.py` | Mede quanto a busca acerta com perguntas de teste (`python avaliar.py [avaliacoes \| documentos]`) |
 | `Dockerfile` | Imagem do agente (Python slim, pacotes instalados com uv, usuário sem root) |
 | `docker-compose.yml` | Sobe Ollama + download dos modelos + agente |
 
@@ -119,7 +141,9 @@ O `bge-m3` não acerta tudo: em *"Tem comida sem carne?"* ele se prende ao "sem"
 - 🎯 **Modelo pequeno leva o prompt ao pé da letra.** Com "se não souber, diga que não sabe", o `llama3.2` respondia "Não sabe" mesmo recebendo a avaliação certa. Trocar por uma frase exata ("Não encontrei nada sobre isso nas avaliações.") resolveu.
 - 🧩 **Memória com modelo pequeno é traiçoeira.** Tentei três jeitos: pedir ao `llama3.2` para reescrever a pergunta (ele inventava preço em vez de reescrever), mandar o histórico no prompt (ele copiava um "Não encontrei" anterior) e juntar a pergunta com o assunto anterior. Só o último funcionou bem, e ainda sem gastar uma chamada extra ao modelo.
 - 🌡️ **`temperature=0` para comparar prompts.** Com a temperatura padrão, a mesma pergunta dá respostas diferentes a cada vez, e fica impossível saber se um ajuste no prompt ajudou ou foi sorte.
-- 🔁 **Mudou o CSV?** Apague a pasta `chroma_db/` para ele indexar de novo.
+- ✂️ **O tamanho do pedaço muda tudo.** Com pedaços de 800 caracteres, um pedaço misturava turnos, folgas e advertências, e a busca pôs o trecho certo em 1º lugar em 7 de 10 perguntas. Com 500, foram 9 de 10.
+- 🧹 **PDF vem sujo.** O texto justificado saía com espaços duplos ("dólmã  branca"), e a busca não achava o trecho do uniforme. Limpar os espaços na leitura resolveu.
+- 🧷 **A memória às vezes gruda no assunto.** Nos documentos, depois de perguntar do uniforme, *"Qual a capital da França?"* foi juntada com o uniforme, e o modelo repetiu o uniforme antes de dizer que não achou nada sobre a França. É o preço de juntar com o assunto anterior sem usar o modelo para decidir.
 - 🌎 **Modelo de embeddings feito para inglês erra em português.** O `mxbai-embed-large` não ligava "entrega" a "delivery". O `bge-m3`, que é multilíngue, separa bem melhor o que é relevante do que não é.
 - 📏 **Cada modelo mede distância numa escala diferente.** O corte que funcionava no `mxbai-embed-large` (0,70) não serve para o `bge-m3` (0,90), por isso os limites ficam por modelo em `LIMITES`, no `vetor.py`.
 
@@ -129,3 +153,4 @@ O `bge-m3` não acerta tudo: em *"Tem comida sem carne?"* ele se prende ao "sem"
 - [x] 🌎 Testar um modelo de embeddings multilíngue, como o `bge-m3`
 - [x] 📊 Criar um script para medir quanto a busca acerta
 - [x] 💬 Lembrar da conversa para perguntas de acompanhamento
+- [x] 📚 Ler os meus próprios documentos (PDF, TXT e MD)
