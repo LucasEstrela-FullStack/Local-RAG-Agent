@@ -47,6 +47,21 @@ Algumas perguntas para testar: *"Posso levar meu cachorro?"*, *"Qual a melhor so
 | `avaliacoes.csv` | As 25 avaliações (título, data, nota e texto) |
 | `vetor.py` | Gera os vetores, salva no ChromaDB e busca as avaliações relevantes |
 | `main.py` | Recebe a pergunta, busca as avaliações e gera a resposta |
+| `avaliar.py` | Mede quanto a busca acerta com 15 perguntas de teste |
+
+## 📊 Medindo a busca
+
+```bash
+python avaliar.py
+```
+
+O script faz 15 perguntas com resposta conhecida (duas delas fora do assunto, que não devem trazer nada) e mostra o que faltou e o que veio de ruído. Uso ele para comparar ajustes e modelos com números, e não no olho. Resultado atual com o `mxbai-embed-large`:
+
+| Métrica | Resultado |
+|---|---|
+| ✅ Acertos | 13/15 (87%) |
+| 🥇 Avaliação certa em 1º lugar | 10/13 (77%) |
+| 🗑️ Avaliações irrelevantes | 14 de 26 trazidas |
 
 ## 💡 Coisas que aprendi no caminho
 
@@ -60,5 +75,5 @@ Algumas perguntas para testar: *"Posso levar meu cachorro?"*, *"Qual a melhor so
 
 - [x] ⚡ Mostrar a resposta enquanto ela é gerada
 - [ ] 🌎 Testar um modelo de embeddings multilíngue, como o `bge-m3`
-- [ ] 📊 Criar um script para medir quanto a busca acerta
+- [x] 📊 Criar um script para medir quanto a busca acerta
 - [ ] 💬 Lembrar da conversa para perguntas de acompanhamento
